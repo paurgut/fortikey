@@ -95,4 +95,18 @@ Los contratos Cairo implementan la lógica de generación de tokens y verificaci
 
 ## Licencia
 
-MIT 
+Licencia de Software Propietario – FortiKey
+
+Copyright © 2025 por FortiKey (https://github.com/paurgut)
+
+Todos los derechos reservados.
+
+Este software y todos sus archivos relacionados están protegidos por las leyes de derechos de autor internacionales. No se permite copiar, distribuir, modificar, sublicenciar, vender ni utilizar ninguna parte de este código fuente, ni su documentación, total o parcialmente, sin una autorización previa y expresa por escrito del titular de los derechos.
+
+El uso no autorizado de este software puede resultar en acciones legales, incluyendo pero no limitado a sanciones civiles y penales.
+
+Para obtener permisos especiales de uso, póngase en contacto con el autor o el equipo de FortiKey a través del repositorio oficial o por los medios autorizados.
+
+Este software se proporciona “tal cual”, sin garantías de ningún tipo.
+
+Fecha de última actualización: 27 de mayo de 2025
