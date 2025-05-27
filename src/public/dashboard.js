@@ -32,6 +32,8 @@ const connectWalletBtn = document.getElementById('connectWalletBtn');
 const generateTokenBtn = document.getElementById('generateTokenBtn');
 const walletStatus = document.getElementById('walletStatus');
 const lastToken = document.getElementById('lastToken');
+const showQRBtn = document.getElementById('showQRBtn');
+const tokenStatus = document.getElementById('tokenStatus');
 
 // Variables globales
 let currentUser = null;
@@ -71,12 +73,8 @@ async function loadPasswords() {
     try {
         const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
         if (!sessionData || !sessionData.token) {
-            console.error('No hay sesión activa o token inválido');
-            showNotification('Error', 'Sesión inválida. Por favor, inicie sesión nuevamente.');
-            return;
+            throw new Error('Sesión inválida');
         }
-        
-        console.log('Intentando cargar contraseñas con token:', sessionData.token);
         
         const response = await fetch(`${API_URL}/passwords`, {
             headers: {
@@ -86,17 +84,10 @@ async function loadPasswords() {
         });
         
         if (!response.ok) {
-            if (response.status === 401) {
-                showNotification('Error', 'Sesión expirada. Por favor, inicie sesión nuevamente.');
-                window.location.href = 'index.html';
-                return;
-            }
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Error al cargar contraseñas');
+            throw new Error('Error al cargar contraseñas');
         }
         
         passwords = await response.json();
-        console.log('Contraseñas cargadas:', passwords);
         renderPasswords();
         updateDashboardStats();
     } catch (error) {
@@ -189,20 +180,107 @@ function showNotification(title, message) {
 async function showPassword(id) {
     try {
         const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
+        if (!sessionData || !sessionData.token) {
+            throw new Error('Sesión inválida');
+        }
+
         const response = await fetch(`${API_URL}/passwords/${id}`, {
             headers: {
                 'Authorization': `Bearer ${sessionData.token}`
             }
         });
         
-        if (!response.ok) throw new Error('Error al obtener la contraseña');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al obtener la contraseña');
+        }
         
-        const password = await response.json();
-        showNotification('Contraseña', `La contraseña es: ${password.password}`);
+        const data = await response.json();
+        
+        // Crear y mostrar el modal
+        const modalHtml = `
+            <div class="modal fade" id="passwordModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Detalles de la Contraseña</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Servicio:</label>
+                                <p class="form-control-plaintext">${data.serviceName}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">URL:</label>
+                                <p class="form-control-plaintext">${data.url || 'No especificada'}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Usuario:</label>
+                                <p class="form-control-plaintext">${data.username || 'No especificado'}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Contraseña:</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" value="${data.password}" id="passwordField" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary" type="button" onclick="copyPassword()">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remover modal anterior si existe
+        const oldModal = document.getElementById('passwordModal');
+        if (oldModal) {
+            oldModal.remove();
+        }
+
+        // Agregar nuevo modal al DOM
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Mostrar el modal
+        const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+        modal.show();
     } catch (error) {
-        showNotification('Error', 'No se pudo obtener la contraseña');
+        console.error('Error al mostrar contraseña:', error);
+        showNotification('Error', 'No se pudo obtener la contraseña: ' + error.message);
     }
 }
+
+// Función para alternar visibilidad de la contraseña
+window.togglePasswordVisibility = function() {
+    const passwordField = document.getElementById('passwordField');
+    const icon = document.querySelector('#passwordModal .bi-eye');
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        passwordField.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+};
+
+// Función para copiar contraseña
+window.copyPassword = function() {
+    const passwordField = document.getElementById('passwordField');
+    passwordField.select();
+    document.execCommand('copy');
+    showNotification('Éxito', 'Contraseña copiada al portapapeles');
+};
 
 // Eliminar contraseña
 async function deletePassword(id) {
@@ -293,17 +371,113 @@ function generateSecurePassword() {
     return password;
 }
 
+// Event Listeners para Starknet
+if (connectWalletBtn) {
+    connectWalletBtn.addEventListener('click', async () => {
+        try {
+            if (!starknetService.isWalletConnected()) {
+                await starknetService.connectWallet();
+                showNotification('Éxito', 'Billetera conectada correctamente');
+                generateTokenBtn.disabled = false;
+            } else {
+                // Desconectar billetera
+                window.starknet.disconnect();
+                showNotification('Info', 'Billetera desconectada');
+                generateTokenBtn.disabled = true;
+                showQRBtn.disabled = true;
+                tokenStatus.textContent = 'No generado';
+            }
+            updateWalletStatus();
+        } catch (error) {
+            showNotification('Error', error.message);
+        }
+    });
+}
+
+if (generateTokenBtn) {
+    generateTokenBtn.addEventListener('click', async () => {
+        try {
+            if (!currentUser) {
+                throw new Error('Usuario no autenticado');
+            }
+
+            const token = await starknetService.generateEncryptionToken(currentUser.id);
+            tokenStatus.textContent = 'Generado';
+            showQRBtn.disabled = false;
+            showNotification('Éxito', 'Token generado correctamente');
+        } catch (error) {
+            showNotification('Error', error.message);
+        }
+    });
+}
+
+if (showQRBtn) {
+    showQRBtn.addEventListener('click', async () => {
+        try {
+            const qrData = await starknetService.generateQRCode();
+            const qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
+            
+            // Limpiar QR anterior si existe
+            const qrContainer = document.getElementById('qrCode');
+            qrContainer.innerHTML = '';
+            
+            // Generar nuevo QR
+            new QRCode(qrContainer, {
+                text: qrData,
+                width: 256,
+                height: 256
+            });
+            
+            qrModal.show();
+        } catch (error) {
+            showNotification('Error', error.message);
+        }
+    });
+}
+
 // Función para actualizar el estado de la billetera
 async function updateWalletStatus() {
     if (starknetService.isWalletConnected()) {
         const address = starknetService.getWalletAddress();
         walletStatus.textContent = `Conectada: ${address}`;
         connectWalletBtn.textContent = 'Desconectar Billetera';
-        generateTokenBtn.disabled = false;
     } else {
         walletStatus.textContent = 'No conectada';
         connectWalletBtn.textContent = 'Conectar Billetera';
-        generateTokenBtn.disabled = true;
+    }
+}
+
+// Guardar contraseña
+async function savePassword(data) {
+    try {
+        const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
+        if (!sessionData || !sessionData.token) {
+            throw new Error('Sesión inválida');
+        }
+
+        // Cifrar la contraseña
+        const encryptedPassword = await starknetService.encryptPassword(data.password);
+        
+        const response = await fetch(`${API_URL}/passwords`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${sessionData.token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ...data,
+                password: encryptedPassword
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al guardar la contraseña');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error al guardar contraseña:', error);
+        throw error;
     }
 }
 
@@ -493,44 +667,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         showNotification('Error', 'No se pudo guardar la contraseña: ' + error.message);
                     }
                 };
-            }
-        });
-    }
-
-    // Event Listeners para Starknet
-    if (connectWalletBtn) {
-        connectWalletBtn.addEventListener('click', async () => {
-            try {
-                if (!starknetService.isWalletConnected()) {
-                    await starknetService.connectWallet();
-                    showNotification('Éxito', 'Billetera conectada correctamente');
-                } else {
-                    // Desconectar billetera
-                    window.starknet.disconnect();
-                    showNotification('Info', 'Billetera desconectada');
-                }
-                updateWalletStatus();
-            } catch (error) {
-                showNotification('Error', error.message);
-            }
-        });
-    }
-
-    if (generateTokenBtn) {
-        generateTokenBtn.addEventListener('click', async () => {
-            try {
-                if (!currentUser) {
-                    throw new Error('Usuario no autenticado');
-                }
-
-                const tx = await starknetService.generateToken(currentUser.id);
-                showNotification('Éxito', 'Token generado correctamente');
-                
-                // Actualizar último token
-                const token = await starknetService.getLastToken();
-                lastToken.textContent = token.toString();
-            } catch (error) {
-                showNotification('Error', error.message);
             }
         });
     }

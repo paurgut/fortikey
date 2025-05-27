@@ -52,18 +52,52 @@ const authenticateToken = (req, res, next) => {
 
 // Función para encriptar contraseña
 function encryptPassword(password, key) {
-    const cipher = crypto.createCipher('aes-256-cbc', key);
-    let encrypted = cipher.update(password, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    return encrypted;
+    try {
+        console.log('Iniciando encriptación...');
+        const iv = crypto.randomBytes(16);
+        const keyBuffer = Buffer.from(key.padEnd(32, '0').slice(0, 32));
+        console.log('IV generado:', iv.toString('hex'));
+        console.log('Longitud de la clave:', keyBuffer.length);
+        
+        const cipher = crypto.createCipheriv('aes-256-cbc', keyBuffer, iv);
+        let encrypted = cipher.update(password, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        const result = iv.toString('hex') + ':' + encrypted;
+        console.log('Encriptación completada');
+        return result;
+    } catch (error) {
+        console.error('Error en encriptación:', error);
+        throw new Error('Error al encriptar la contraseña');
+    }
 }
 
 // Función para desencriptar contraseña
 function decryptPassword(encrypted, key) {
-    const decipher = crypto.createDecipher('aes-256-cbc', key);
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
+    try {
+        console.log('Iniciando desencriptación...');
+        console.log('Datos encriptados recibidos:', encrypted);
+        
+        if (!encrypted || !encrypted.includes(':')) {
+            throw new Error('Formato de datos encriptados inválido');
+        }
+
+        const [ivHex, encryptedData] = encrypted.split(':');
+        console.log('IV extraído:', ivHex);
+        console.log('Datos encriptados extraídos:', encryptedData);
+        
+        const iv = Buffer.from(ivHex, 'hex');
+        const keyBuffer = Buffer.from(key.padEnd(32, '0').slice(0, 32));
+        console.log('Longitud de la clave:', keyBuffer.length);
+        
+        const decipher = crypto.createDecipheriv('aes-256-cbc', keyBuffer, iv);
+        let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        console.log('Desencriptación completada');
+        return decrypted;
+    } catch (error) {
+        console.error('Error en desencriptación:', error);
+        throw new Error('Error al desencriptar la contraseña: ' + error.message);
+    }
 }
 
 // Rutas de autenticación
@@ -172,17 +206,16 @@ app.get('/api/passwords', authenticateToken, (req, res) => {
     try {
         console.log('Usuario autenticado:', req.user);
         
-        let passwords = [];
+        let passwordsData = { passwords: [] };
         try {
-            passwords = JSON.parse(fs.readFileSync(passwordsFile));
-            console.log('Contraseñas cargadas:', passwords);
+            passwordsData = JSON.parse(fs.readFileSync(passwordsFile));
+            console.log('Contraseñas cargadas:', passwordsData);
         } catch (error) {
             console.error('Error al leer passwords.json:', error);
-            passwords = [];
         }
 
         // Filtrar contraseñas del usuario actual
-        const userPasswords = passwords.filter(p => p.userId === req.user.id);
+        const userPasswords = passwordsData.passwords.filter(p => p.userId === req.user.id);
         console.log('Contraseñas filtradas para usuario:', userPasswords);
         
         // Remover las contraseñas encriptadas de la respuesta
@@ -203,20 +236,33 @@ app.get('/api/passwords', authenticateToken, (req, res) => {
 
 app.get('/api/passwords/:id', authenticateToken, (req, res) => {
     try {
-        let passwords = [];
+        console.log('Obteniendo contraseña con ID:', req.params.id);
+        console.log('Usuario autenticado:', req.user);
+        
+        let passwordsData = { passwords: [] };
         try {
-            passwords = JSON.parse(fs.readFileSync(passwordsFile));
+            passwordsData = JSON.parse(fs.readFileSync(passwordsFile));
+            console.log('Datos de contraseñas cargados:', passwordsData);
         } catch (error) {
-            passwords = [];
+            console.error('Error al leer passwords.json:', error);
+            return res.status(500).json({ error: 'Error al leer el archivo de contraseñas' });
         }
 
-        const password = passwords.find(p => p.id === req.params.id && p.userId === req.user.id);
+        const password = passwordsData.passwords.find(p => p.id === req.params.id && p.userId === req.user.id);
         if (!password) {
+            console.log('Contraseña no encontrada');
             return res.status(404).json({ error: 'Contraseña no encontrada' });
         }
 
+        console.log('Contraseña encontrada:', {
+            id: password.id,
+            serviceName: password.serviceName,
+            hasEncryptedPassword: !!password.encryptedPassword
+        });
+
         // Desencriptar contraseña
         const decryptedPassword = decryptPassword(password.encryptedPassword, JWT_SECRET);
+        console.log('Contraseña desencriptada exitosamente');
 
         res.json({
             id: password.id,
@@ -228,7 +274,7 @@ app.get('/api/passwords/:id', authenticateToken, (req, res) => {
         });
     } catch (error) {
         console.error('Error al obtener contraseña:', error);
-        res.status(500).json({ error: 'Error al obtener contraseña' });
+        res.status(500).json({ error: 'Error al obtener contraseña: ' + error.message });
     }
 });
 
@@ -242,12 +288,11 @@ app.post('/api/passwords', authenticateToken, (req, res) => {
             return res.status(400).json({ error: 'Nombre del servicio y contraseña son requeridos' });
         }
 
-        let passwords = [];
+        let passwordsData = { passwords: [] };
         try {
-            passwords = JSON.parse(fs.readFileSync(passwordsFile));
+            passwordsData = JSON.parse(fs.readFileSync(passwordsFile));
         } catch (error) {
             console.error('Error al leer passwords.json:', error);
-            passwords = [];
         }
 
         // Encriptar contraseña
@@ -265,8 +310,8 @@ app.post('/api/passwords', authenticateToken, (req, res) => {
         };
 
         // Guardar contraseña
-        passwords.push(newPassword);
-        fs.writeFileSync(passwordsFile, JSON.stringify(passwords, null, 2));
+        passwordsData.passwords.push(newPassword);
+        fs.writeFileSync(passwordsFile, JSON.stringify(passwordsData, null, 2));
 
         // Devolver contraseña sin datos sensibles
         res.json({
@@ -286,23 +331,23 @@ app.delete('/api/passwords/:id', authenticateToken, (req, res) => {
     try {
         console.log('Eliminando contraseña:', req.params.id, 'para usuario:', req.user.id);
         
-        let passwords = [];
+        let passwordsData = { passwords: [] };
         try {
-            passwords = JSON.parse(fs.readFileSync(passwordsFile));
+            passwordsData = JSON.parse(fs.readFileSync(passwordsFile));
         } catch (error) {
             console.error('Error al leer passwords.json:', error);
             return res.status(500).json({ error: 'Error al leer contraseñas' });
         }
 
         // Encontrar índice de la contraseña
-        const passwordIndex = passwords.findIndex(p => p.id === req.params.id && p.userId === req.user.id);
+        const passwordIndex = passwordsData.passwords.findIndex(p => p.id === req.params.id && p.userId === req.user.id);
         if (passwordIndex === -1) {
             return res.status(404).json({ error: 'Contraseña no encontrada' });
         }
 
         // Eliminar contraseña
-        passwords.splice(passwordIndex, 1);
-        fs.writeFileSync(passwordsFile, JSON.stringify(passwords, null, 2));
+        passwordsData.passwords.splice(passwordIndex, 1);
+        fs.writeFileSync(passwordsFile, JSON.stringify(passwordsData, null, 2));
 
         res.json({ success: true });
     } catch (error) {

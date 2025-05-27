@@ -5,6 +5,17 @@ const API_URL = 'http://localhost:3000/api';
 const registerForm = document.getElementById('registerForm');
 const toggleRegisterPassword = document.getElementById('toggleRegisterPassword');
 
+// Función para mostrar notificaciones
+function showNotification(title, message) {
+    const notificationModal = new bootstrap.Modal(document.getElementById('notificationModal'));
+    const notificationTitle = document.getElementById('notificationTitle');
+    const notificationMessage = document.getElementById('notificationMessage');
+    
+    if (notificationTitle) notificationTitle.textContent = title;
+    if (notificationMessage) notificationMessage.textContent = message;
+    if (notificationModal) notificationModal.show();
+}
+
 // Toggle password visibility
 toggleRegisterPassword.addEventListener('click', () => {
     const passwordInput = document.getElementById('registerPassword');
@@ -22,18 +33,19 @@ toggleRegisterPassword.addEventListener('click', () => {
 });
 
 // Registro de usuario
-registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+async function handleRegister(event) {
+    event.preventDefault();
     
     const username = document.getElementById('registerUsername').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
     
     if (!username || !password) {
-        alert('Por favor, completa todos los campos');
+        showNotification('Error', 'Por favor, completa todos los campos');
         return;
     }
-    
+
     try {
+        // Registrar usuario
         const response = await fetch(`${API_URL}/register`, {
             method: 'POST',
             headers: {
@@ -41,24 +53,27 @@ registerForm.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({ username, password })
         });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Guardar usuario y token
-            localStorage.setItem('currentUser', JSON.stringify({
-                id: data.user.id,
-                username: data.user.username,
-                token: data.token
-            }));
-            
-            alert('Registro exitoso');
-            window.location.href = 'index.html';
-        } else {
-            alert(data.error || 'Error en el registro');
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error en el registro');
         }
+
+        const userData = await response.json();
+        
+        // Guardar sesión
+        sessionStorage.setItem('currentSession', JSON.stringify({
+            user: userData.user,
+            token: userData.token
+        }));
+
+        // Redirigir al dashboard
+        window.location.href = 'dashboard.html';
+
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error al conectar con el servidor');
+        console.error('Error en el registro:', error);
+        showNotification('Error', error.message);
     }
-}); 
+}
+
+registerForm.addEventListener('submit', handleRegister); 
