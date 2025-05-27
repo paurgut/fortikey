@@ -1,5 +1,5 @@
 // Configuración
-const API_URL = 'https://fortikey.onrender.com';
+const API_URL = 'http://localhost:10000';
 
 // Elementos del DOM
 const registerForm = document.getElementById('registerForm');
