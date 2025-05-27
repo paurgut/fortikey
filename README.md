@@ -1,18 +1,23 @@
-# FortiKey - Sistema de Registro con Tokens QR
+# FortiKey - Gestor de Contraseñas Seguro
 
-Este proyecto implementa un sistema de registro de usuarios que genera tokens QR únicos y los integra con un contrato Cairo en Starknet.
+FortiKey es una aplicación web moderna para gestionar contraseñas de forma segura, con autenticación de usuarios y generación de tokens QR.
 
 ## Características
 
-- Registro de usuarios
-- Generación de tokens QR únicos
-- Almacenamiento en JSON
-- Integración con contrato Cairo en Starknet
+- Registro e inicio de sesión de usuarios
+- Dashboard moderno con Bootstrap
+- Gestión segura de contraseñas
+- Escáner QR para importar contraseñas
+- Modo oscuro
+- Interfaz responsiva
+- Almacenamiento seguro de datos
+- Integración con contratos inteligentes en Starknet
 
 ## Requisitos
 
 - Node.js (v14 o superior)
 - npm o yarn
+- Scarb (para contratos Cairo)
 
 ## Instalación
 
@@ -22,45 +27,71 @@ git clone <url-del-repositorio>
 cd fortikey
 ```
 
-2. Instalar dependencias:
+2. Instalar dependencias del frontend:
 ```bash
 npm install
 ```
 
-3. Iniciar el servidor:
+3. Instalar dependencias de los contratos:
+```bash
+cd contracts
+scarb build
+cd ..
+```
+
+4. Iniciar el servidor:
 ```bash
 npm run dev
 ```
-
-## Uso
-
-### Registro de Usuario
-
-```bash
-curl -X POST http://localhost:3000/api/register \
-  -H "Content-Type: application/json" \
-  -d '{"username": "usuario1", "password": "contraseña123"}'
-```
-
-La respuesta incluirá un código QR único que representa el token del usuario.
 
 ## Estructura del Proyecto
 
 ```
 fortikey/
 ├── src/
-│   ├── index.js
-│   └── data/
-│       └── users.json
-├── contracts/
-│   └── mi_proyecto_cairo.cairo
+│   ├── index.js              # Servidor principal
+│   └── public/              # Archivos del frontend
+│       ├── index.html       # Página de login
+│       ├── register.html    # Página de registro
+│       ├── dashboard.html   # Panel principal
+│       ├── styles.css       # Estilos globales
+│       ├── login.js         # Lógica de login
+│       ├── register.js      # Lógica de registro
+│       └── dashboard.js     # Lógica del dashboard
+├── contracts/               # Contratos Cairo
+│   ├── src/
+│   │   └── lib.cairo       # Contrato principal
+│   ├── Scarb.toml          # Configuración de Scarb
+│   └── Scarb.lock          # Lock file de dependencias
 ├── package.json
 └── README.md
 ```
 
-## Contrato Cairo
+## Uso
 
-El contrato Cairo implementa la generación de tokens únicos basados en el ID del usuario y el número de bloque actual.
+### Registro de Usuario
+
+1. Accede a la página de registro
+2. Ingresa un nombre de usuario y contraseña
+3. Se generará un token QR único para tu cuenta
+
+### Inicio de Sesión
+
+1. Accede a la página de inicio de sesión
+2. Ingresa tus credenciales
+3. Serás redirigido al dashboard
+
+### Dashboard
+
+- Ver estadísticas de tus contraseñas
+- Agregar nuevas contraseñas
+- Escanear códigos QR
+- Gestionar configuraciones
+- Activar/desactivar modo oscuro
+
+## Contratos Cairo
+
+Los contratos Cairo implementan la lógica de generación de tokens y verificación de identidad en la blockchain de Starknet.
 
 ## Licencia
 

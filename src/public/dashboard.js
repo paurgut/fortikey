@@ -18,7 +18,14 @@ const passwordsList = document.getElementById('passwordsList');
 const qrScanner = document.getElementById('qrScanner');
 const qrVideo = document.getElementById('qrVideo');
 const togglePassword = document.getElementById('togglePassword');
-const passwordForm = document.getElementById('passwordForm');
+const passwordForm = document.getElementById('addPasswordForm');
+const generatePasswordBtn = document.getElementById('generatePasswordBtn');
+const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+const savePasswordBtn = document.getElementById('savePasswordBtn');
+const passwordsTable = document.getElementById('passwordsTable');
+const notificationModal = new bootstrap.Modal(document.getElementById('notificationModal'));
+const notificationTitle = document.getElementById('notificationTitle');
+const notificationMessage = document.getElementById('notificationMessage');
 
 // Variables globales
 let currentUser = null;
@@ -27,13 +34,15 @@ let scanner = null;
 
 // Verificar autenticación
 function checkAuth() {
-    const userData = localStorage.getItem('currentUser');
-    if (!userData) {
+    const sessionData = sessionStorage.getItem('currentSession');
+    
+    if (!sessionData) {
         window.location.href = 'index.html';
         return;
     }
     
-    currentUser = JSON.parse(userData);
+    const session = JSON.parse(sessionData);
+    currentUser = session.user;
     userName.textContent = currentUser.username;
     loadPasswords();
     updateLastAccess();
@@ -42,72 +51,52 @@ function checkAuth() {
 // Cargar contraseñas
 async function loadPasswords() {
     try {
+        const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
+        console.log('Intentando cargar contraseñas con token:', sessionData.token);
+        
         const response = await fetch(`${API_URL}/passwords`, {
             headers: {
-                'Authorization': `Bearer ${currentUser.token}`
+                'Authorization': `Bearer ${sessionData.token}`
             }
         });
         
-        if (response.ok) {
-            passwords = await response.json();
-            updatePasswordsList();
-            updateDashboardStats();
-        } else {
-            throw new Error('Error al cargar contraseñas');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al cargar contraseñas');
         }
+        
+        passwords = await response.json();
+        console.log('Contraseñas cargadas:', passwords);
+        renderPasswords();
+        updateDashboardStats();
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error al cargar las contraseñas');
+        console.error('Error al cargar contraseñas:', error);
+        showNotification('Error', 'No se pudieron cargar las contraseñas');
     }
 }
 
-// Actualizar lista de contraseñas
-function updatePasswordsList() {
-    // Actualizar tabla de contraseñas recientes
-    recentPasswords.innerHTML = passwords
-        .slice(0, 5)
-        .map(password => `
-            <tr>
-                <td>${password.serviceName}</td>
-                <td>${password.username}</td>
-                <td>${new Date(password.updatedAt).toLocaleDateString()}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="viewPassword('${password.id}')">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deletePassword('${password.id}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `)
-        .join('');
+// Renderizar contraseñas
+function renderPasswords() {
+    const tbody = recentPasswords;
+    tbody.innerHTML = '';
     
-    // Actualizar lista completa de contraseñas
-    passwordsList.innerHTML = passwords
-        .map(password => `
-            <div class="col-md-4 mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">${password.serviceName}</h5>
-                        <p class="card-text">
-                            <strong>Usuario:</strong> ${password.username}<br>
-                            <strong>URL:</strong> ${password.url || 'No especificada'}<br>
-                            <strong>Última actualización:</strong> ${new Date(password.updatedAt).toLocaleDateString()}
-                        </p>
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-outline-primary" onclick="viewPassword('${password.id}')">
-                                <i class="bi bi-eye"></i> Ver
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deletePassword('${password.id}')">
-                                <i class="bi bi-trash"></i> Eliminar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `)
-        .join('');
+    passwords.forEach(password => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${password.serviceName}</td>
+            <td>${password.username || '-'}</td>
+            <td>${new Date(password.updatedAt).toLocaleDateString()}</td>
+            <td>
+                <button class="btn btn-sm btn-info" onclick="showPassword('${password.id}')">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deletePassword('${password.id}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 // Actualizar estadísticas del dashboard
@@ -122,27 +111,29 @@ function updateLastAccess() {
     lastAccess.textContent = now.toLocaleTimeString();
 }
 
-// Ver contraseña
-async function viewPassword(id) {
-    const password = passwords.find(p => p.id === id);
-    if (!password) return;
-    
+// Mostrar notificación
+function showNotification(title, message) {
+    notificationTitle.textContent = title;
+    notificationMessage.textContent = message;
+    notificationModal.show();
+}
+
+// Mostrar contraseña
+async function showPassword(id) {
     try {
+        const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
         const response = await fetch(`${API_URL}/passwords/${id}`, {
             headers: {
-                'Authorization': `Bearer ${currentUser.token}`
+                'Authorization': `Bearer ${sessionData.token}`
             }
         });
         
-        if (response.ok) {
-            const data = await response.json();
-            alert(`Contraseña: ${data.password}`);
-        } else {
-            throw new Error('Error al obtener la contraseña');
-        }
+        if (!response.ok) throw new Error('Error al obtener la contraseña');
+        
+        const password = await response.json();
+        showNotification('Contraseña', `La contraseña es: ${password.password}`);
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error al obtener la contraseña');
+        showNotification('Error', 'No se pudo obtener la contraseña');
     }
 }
 
@@ -151,23 +142,22 @@ async function deletePassword(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar esta contraseña?')) return;
     
     try {
+        const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
         const response = await fetch(`${API_URL}/passwords/${id}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${currentUser.token}`
+                'Authorization': `Bearer ${sessionData.token}`
             }
         });
         
-        if (response.ok) {
-            passwords = passwords.filter(p => p.id !== id);
-            updatePasswordsList();
-            updateDashboardStats();
-        } else {
-            throw new Error('Error al eliminar la contraseña');
-        }
+        if (!response.ok) throw new Error('Error al eliminar la contraseña');
+        
+        passwords = passwords.filter(p => p.id !== id);
+        renderPasswords();
+        updateDashboardStats();
+        showNotification('Éxito', 'Contraseña eliminada correctamente');
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error al eliminar la contraseña');
+        showNotification('Error', 'No se pudo eliminar la contraseña');
     }
 }
 
@@ -211,6 +201,29 @@ function handleQRCode(code) {
         console.error('Error al procesar el código QR:', error);
         alert('Código QR inválido');
     }
+}
+
+// Generar contraseña segura
+function generateSecurePassword() {
+    const length = 16;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=';
+    let password = '';
+    
+    // Asegurar al menos un carácter de cada tipo
+    password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)]; // Mayúscula
+    password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]; // Minúscula
+    password += '0123456789'[Math.floor(Math.random() * 10)]; // Número
+    password += '!@#$%^&*()_+~`|}{[]:;?><,./-='[Math.floor(Math.random() * 32)]; // Símbolo
+    
+    // Completar el resto de la contraseña
+    for (let i = password.length; i < length; i++) {
+        password += charset[Math.floor(Math.random() * charset.length)];
+    }
+    
+    // Mezclar la contraseña
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+    
+    return password;
 }
 
 // Event Listeners
@@ -286,58 +299,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Formulario de contraseña
-    passwordForm.addEventListener('submit', async (e) => {
+    // Cerrar sesión
+    document.getElementById('sidebarLogoutLink').addEventListener('click', (e) => {
         e.preventDefault();
-        
-        const serviceName = document.getElementById('serviceName').value.trim();
-        const serviceUrl = document.getElementById('serviceUrl').value.trim();
-        const serviceUsername = document.getElementById('serviceUsername').value.trim();
-        const password = document.getElementById('password').value.trim();
-        
-        if (!serviceName || !password) {
-            alert('Por favor, completa los campos requeridos');
-            return;
-        }
+        sessionStorage.removeItem('currentSession');
+        window.location.href = 'index.html';
+    });
+
+    document.getElementById('menuLogoutLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        sessionStorage.removeItem('currentSession');
+        window.location.href = 'index.html';
+    });
+
+    // Configuración
+    document.getElementById('menuSettingsLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        navLinks.forEach(l => l.classList.remove('active'));
+        document.getElementById('settingsLink').classList.add('active');
+        sections.forEach(section => section.style.display = 'none');
+        document.getElementById('settingsSection').style.display = 'block';
+    });
+
+    // Event listeners para el formulario de contraseña
+    generatePasswordBtn.addEventListener('click', () => {
+        const passwordInput = passwordForm.querySelector('[name="password"]');
+        passwordInput.value = generateSecurePassword();
+    });
+
+    togglePasswordBtn.addEventListener('click', () => {
+        const passwordInput = passwordForm.querySelector('[name="password"]');
+        const type = passwordInput.type === 'password' ? 'text' : 'password';
+        passwordInput.type = type;
+        togglePasswordBtn.querySelector('i').className = type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+    });
+
+    savePasswordBtn.addEventListener('click', async () => {
+        const formData = new FormData(passwordForm);
+        const data = {
+            serviceName: formData.get('serviceName'),
+            url: formData.get('url'),
+            username: formData.get('username'),
+            password: formData.get('password')
+        };
         
         try {
+            const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
             const response = await fetch(`${API_URL}/passwords`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`
+                    'Authorization': `Bearer ${sessionData.token}`,
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    serviceName,
-                    url: serviceUrl,
-                    username: serviceUsername,
-                    password
-                })
+                body: JSON.stringify(data)
             });
             
-            if (response.ok) {
-                const newPassword = await response.json();
-                passwords.unshift(newPassword);
-                updatePasswordsList();
-                updateDashboardStats();
-                
-                // Cerrar modal y limpiar formulario
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addPasswordModal'));
-                modal.hide();
-                passwordForm.reset();
-            } else {
-                throw new Error('Error al guardar la contraseña');
-            }
+            if (!response.ok) throw new Error('Error al guardar la contraseña');
+            
+            const newPassword = await response.json();
+            passwords.push(newPassword);
+            renderPasswords();
+            
+            // Cerrar modal y limpiar formulario
+            bootstrap.Modal.getInstance(document.getElementById('addPasswordModal')).hide();
+            passwordForm.reset();
+            
+            showNotification('Éxito', 'Contraseña guardada correctamente');
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error al guardar la contraseña');
+            showNotification('Error', 'No se pudo guardar la contraseña');
         }
-    });
-    
-    // Cerrar sesión
-    document.getElementById('logoutLink').addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem('currentUser');
-        window.location.href = 'index.html';
     });
 }); 
