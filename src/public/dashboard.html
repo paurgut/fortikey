@@ -31,7 +31,10 @@
                 <a class="nav-link" href="#" id="settingsLink">
                     <i class="bi bi-gear"></i> Configuración
                 </a>
-                <a class="nav-link" href="#" id="sidebarLogoutLink">
+                <a class="nav-link" href="#" id="starknetLink">
+                    <i class="bi bi-currency-bitcoin"></i> Starknet
+                </a>
+                <a class="nav-link" href="javascript:void(0)" onclick="logout()" id="sidebarLogoutLink">
                     <i class="bi bi-box-arrow-left"></i> Cerrar Sesión
                 </a>
             </nav>
@@ -55,7 +58,7 @@
                                 <li><a class="dropdown-item" href="#" id="profileLink">Perfil</a></li>
                                 <li><a class="dropdown-item" href="#" id="menuSettingsLink">Configuración</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="menuLogoutLink">Cerrar Sesión</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="logout()" id="menuLogoutLink">Cerrar Sesión</a></li>
                             </ul>
                         </div>
                         <button class="btn btn-link" id="darkModeToggle">
@@ -170,6 +173,32 @@
                                 </div>
                                 <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                             </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Starknet Section -->
+                <div id="starknetSection" class="section" style="display: none;">
+                    <h2 class="mb-4">Starknet</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <h5>Estado de la Billetera</h5>
+                                <p id="walletStatus">No conectada</p>
+                                <button class="btn btn-primary" id="connectWalletBtn">
+                                    <i class="bi bi-wallet2"></i> Conectar Billetera
+                                </button>
+                            </div>
+                            <div class="mb-4">
+                                <h5>Generar Token</h5>
+                                <button class="btn btn-success" id="generateTokenBtn">
+                                    <i class="bi bi-key"></i> Generar Token
+                                </button>
+                            </div>
+                            <div class="mb-4">
+                                <h5>Último Token</h5>
+                                <p id="lastToken">-</p>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -34,6 +34,7 @@ loginForm.addEventListener('submit', async (e) => {
     }
     
     try {
+        console.log('Intentando iniciar sesión...');
         const response = await fetch(`${API_URL}/login`, {
             method: 'POST',
             headers: {
@@ -43,22 +44,32 @@ loginForm.addEventListener('submit', async (e) => {
         });
         
         const data = await response.json();
+        console.log('Respuesta del servidor:', data);
         
-        if (data.success) {
-            // Guardar usuario y token
-            localStorage.setItem('currentUser', JSON.stringify({
-                id: data.user.id,
-                username: data.user.username,
+        if (!response.ok) {
+            throw new Error(data.error || 'Error en el inicio de sesión');
+        }
+        
+        if (data.success && data.token && data.user) {
+            // Guardar sesión
+            const sessionData = {
+                user: {
+                    id: data.user.id,
+                    username: data.user.username
+                },
                 token: data.token
-            }));
+            };
+            
+            sessionStorage.setItem('currentSession', JSON.stringify(sessionData));
+            console.log('Sesión guardada correctamente');
             
             // Redirigir al dashboard
-            window.location.href = 'dashboard.html';
+            window.location.replace('dashboard.html');
         } else {
-            alert(data.error || 'Error en el inicio de sesión');
+            throw new Error('Datos de sesión incompletos');
         }
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error al conectar con el servidor');
+        console.error('Error en inicio de sesión:', error);
+        alert(error.message || 'Error al conectar con el servidor');
     }
 }); 

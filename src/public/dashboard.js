@@ -27,10 +27,23 @@ const notificationModal = new bootstrap.Modal(document.getElementById('notificat
 const notificationTitle = document.getElementById('notificationTitle');
 const notificationMessage = document.getElementById('notificationMessage');
 
+// Elementos del DOM para Starknet
+const connectWalletBtn = document.getElementById('connectWalletBtn');
+const generateTokenBtn = document.getElementById('generateTokenBtn');
+const walletStatus = document.getElementById('walletStatus');
+const lastToken = document.getElementById('lastToken');
+
 // Variables globales
 let currentUser = null;
 let passwords = [];
 let scanner = null;
+
+// Función global para cerrar sesión
+window.logout = function() {
+    console.log('Cerrando sesión...');
+    sessionStorage.clear();
+    window.location.href = 'index.html';
+};
 
 // Verificar autenticación
 function checkAuth() {
@@ -41,11 +54,16 @@ function checkAuth() {
         return;
     }
     
-    const session = JSON.parse(sessionData);
-    currentUser = session.user;
-    userName.textContent = currentUser.username;
-    loadPasswords();
-    updateLastAccess();
+    try {
+        const session = JSON.parse(sessionData);
+        currentUser = session.user;
+        if (userName) userName.textContent = currentUser.username;
+        loadPasswords();
+        updateLastAccess();
+    } catch (error) {
+        console.error('Error al cargar la sesión:', error);
+        window.location.href = 'index.html';
+    }
 }
 
 // Cargar contraseñas
@@ -77,8 +95,12 @@ async function loadPasswords() {
 
 // Renderizar contraseñas
 function renderPasswords() {
-    const tbody = recentPasswords;
-    tbody.innerHTML = '';
+    if (!recentPasswords) {
+        console.error('No se encontró el elemento recentPasswords');
+        return;
+    }
+
+    recentPasswords.innerHTML = '';
     
     passwords.forEach(password => {
         const tr = document.createElement('tr');
@@ -95,27 +117,33 @@ function renderPasswords() {
                 </button>
             </td>
         `;
-        tbody.appendChild(tr);
+        recentPasswords.appendChild(tr);
     });
 }
 
 // Actualizar estadísticas del dashboard
 function updateDashboardStats() {
-    totalPasswords.textContent = passwords.length;
-    securityStatus.textContent = passwords.length > 0 ? 'Bueno' : 'Sin contraseñas';
+    if (totalPasswords) totalPasswords.textContent = passwords.length;
+    if (securityStatus) securityStatus.textContent = passwords.length > 0 ? 'Bueno' : 'Sin contraseñas';
 }
 
 // Actualizar último acceso
 function updateLastAccess() {
-    const now = new Date();
-    lastAccess.textContent = now.toLocaleTimeString();
+    if (lastAccess) {
+        const now = new Date();
+        lastAccess.textContent = now.toLocaleTimeString();
+    }
 }
 
 // Mostrar notificación
 function showNotification(title, message) {
-    notificationTitle.textContent = title;
-    notificationMessage.textContent = message;
-    notificationModal.show();
+    const notificationModal = new bootstrap.Modal(document.getElementById('notificationModal'));
+    const notificationTitle = document.getElementById('notificationTitle');
+    const notificationMessage = document.getElementById('notificationMessage');
+    
+    if (notificationTitle) notificationTitle.textContent = title;
+    if (notificationMessage) notificationMessage.textContent = message;
+    if (notificationModal) notificationModal.show();
 }
 
 // Mostrar contraseña
@@ -226,6 +254,20 @@ function generateSecurePassword() {
     return password;
 }
 
+// Función para actualizar el estado de la billetera
+async function updateWalletStatus() {
+    if (starknetService.isWalletConnected()) {
+        const address = starknetService.getWalletAddress();
+        walletStatus.textContent = `Conectada: ${address}`;
+        connectWalletBtn.textContent = 'Desconectar Billetera';
+        generateTokenBtn.disabled = false;
+    } else {
+        walletStatus.textContent = 'No conectada';
+        connectWalletBtn.textContent = 'Conectar Billetera';
+        generateTokenBtn.disabled = true;
+    }
+}
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
@@ -246,7 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Mostrar la sección correspondiente
             const sectionId = link.id.replace('Link', 'Section');
-            document.getElementById(sectionId).style.display = 'block';
+            const section = document.getElementById(sectionId);
+            if (section) section.style.display = 'block';
             
             // Inicializar escáner QR si es necesario
             if (sectionId === 'qrSection') {
@@ -258,29 +301,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Toggle sidebar en móvil
-    document.getElementById('sidebarToggle').addEventListener('click', () => {
-        sidebar.classList.toggle('show');
-    });
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => {
+            if (sidebar) sidebar.classList.toggle('show');
+        });
+    }
     
     // Dark mode
-    darkModeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const icon = darkModeToggle.querySelector('i');
-        if (document.body.classList.contains('dark-mode')) {
-            icon.classList.remove('bi-moon');
-            icon.classList.add('bi-sun');
-            localStorage.setItem('darkMode', 'true');
-        } else {
-            icon.classList.remove('bi-sun');
-            icon.classList.add('bi-moon');
-            localStorage.setItem('darkMode', 'false');
-        }
-    });
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const icon = darkModeToggle.querySelector('i');
+            if (icon) {
+                if (document.body.classList.contains('dark-mode')) {
+                    icon.classList.remove('bi-moon');
+                    icon.classList.add('bi-sun');
+                    localStorage.setItem('darkMode', 'true');
+                } else {
+                    icon.classList.remove('bi-sun');
+                    icon.classList.add('bi-moon');
+                    localStorage.setItem('darkMode', 'false');
+                }
+            }
+        });
+    }
     
     // Cargar preferencias de tema
     if (localStorage.getItem('darkMode') === 'true') {
         document.body.classList.add('dark-mode');
-        darkModeToggle.querySelector('i').classList.replace('bi-moon', 'bi-sun');
+        if (darkModeToggle) {
+            const icon = darkModeToggle.querySelector('i');
+            if (icon) icon.classList.replace('bi-moon', 'bi-sun');
+        }
     }
     
     // Toggle password visibility
@@ -299,19 +352,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Cerrar sesión
-    document.getElementById('sidebarLogoutLink').addEventListener('click', (e) => {
-        e.preventDefault();
-        sessionStorage.removeItem('currentSession');
-        window.location.href = 'index.html';
-    });
-
-    document.getElementById('menuLogoutLink').addEventListener('click', (e) => {
-        e.preventDefault();
-        sessionStorage.removeItem('currentSession');
-        window.location.href = 'index.html';
-    });
-
     // Configuración
     document.getElementById('menuSettingsLink').addEventListener('click', (e) => {
         e.preventDefault();
@@ -322,51 +362,102 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Event listeners para el formulario de contraseña
-    generatePasswordBtn.addEventListener('click', () => {
-        const passwordInput = passwordForm.querySelector('[name="password"]');
-        passwordInput.value = generateSecurePassword();
-    });
+    if (generatePasswordBtn) {
+        generatePasswordBtn.addEventListener('click', () => {
+            const passwordInput = passwordForm?.querySelector('[name="password"]');
+            if (passwordInput) passwordInput.value = generateSecurePassword();
+        });
+    }
 
-    togglePasswordBtn.addEventListener('click', () => {
-        const passwordInput = passwordForm.querySelector('[name="password"]');
-        const type = passwordInput.type === 'password' ? 'text' : 'password';
-        passwordInput.type = type;
-        togglePasswordBtn.querySelector('i').className = type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
-    });
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', () => {
+            const passwordInput = passwordForm?.querySelector('[name="password"]');
+            if (passwordInput) {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                const icon = togglePasswordBtn.querySelector('i');
+                if (icon) icon.className = type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+            }
+        });
+    }
 
-    savePasswordBtn.addEventListener('click', async () => {
-        const formData = new FormData(passwordForm);
-        const data = {
-            serviceName: formData.get('serviceName'),
-            url: formData.get('url'),
-            username: formData.get('username'),
-            password: formData.get('password')
-        };
-        
-        try {
-            const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
-            const response = await fetch(`${API_URL}/passwords`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${sessionData.token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
+    if (savePasswordBtn && passwordForm) {
+        savePasswordBtn.addEventListener('click', async () => {
+            const formData = new FormData(passwordForm);
+            const data = {
+                serviceName: formData.get('serviceName'),
+                url: formData.get('url'),
+                username: formData.get('username'),
+                password: formData.get('password')
+            };
             
-            if (!response.ok) throw new Error('Error al guardar la contraseña');
-            
-            const newPassword = await response.json();
-            passwords.push(newPassword);
-            renderPasswords();
-            
-            // Cerrar modal y limpiar formulario
-            bootstrap.Modal.getInstance(document.getElementById('addPasswordModal')).hide();
-            passwordForm.reset();
-            
-            showNotification('Éxito', 'Contraseña guardada correctamente');
-        } catch (error) {
-            showNotification('Error', 'No se pudo guardar la contraseña');
-        }
-    });
+            try {
+                const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
+                const response = await fetch(`${API_URL}/passwords`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${sessionData.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) throw new Error('Error al guardar la contraseña');
+                
+                const newPassword = await response.json();
+                passwords.push(newPassword);
+                renderPasswords();
+                
+                // Cerrar modal y limpiar formulario
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addPasswordModal'));
+                if (modal) modal.hide();
+                passwordForm.reset();
+                
+                showNotification('Éxito', 'Contraseña guardada correctamente');
+            } catch (error) {
+                showNotification('Error', 'No se pudo guardar la contraseña');
+            }
+        });
+    }
+
+    // Event Listeners para Starknet
+    if (connectWalletBtn) {
+        connectWalletBtn.addEventListener('click', async () => {
+            try {
+                if (!starknetService.isWalletConnected()) {
+                    await starknetService.connectWallet();
+                    showNotification('Éxito', 'Billetera conectada correctamente');
+                } else {
+                    // Desconectar billetera
+                    window.starknet.disconnect();
+                    showNotification('Info', 'Billetera desconectada');
+                }
+                updateWalletStatus();
+            } catch (error) {
+                showNotification('Error', error.message);
+            }
+        });
+    }
+
+    if (generateTokenBtn) {
+        generateTokenBtn.addEventListener('click', async () => {
+            try {
+                if (!currentUser) {
+                    throw new Error('Usuario no autenticado');
+                }
+
+                const tx = await starknetService.generateToken(currentUser.id);
+                showNotification('Éxito', 'Token generado correctamente');
+                
+                // Actualizar último token
+                const token = await starknetService.getLastToken();
+                lastToken.textContent = token.toString();
+            } catch (error) {
+                showNotification('Error', error.message);
+            }
+        });
+    }
+
+    // Actualizar estado de la billetera al cargar la página
+    updateWalletStatus();
 }); 
