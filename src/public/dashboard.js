@@ -70,15 +70,27 @@ function checkAuth() {
 async function loadPasswords() {
     try {
         const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
+        if (!sessionData || !sessionData.token) {
+            console.error('No hay sesión activa o token inválido');
+            showNotification('Error', 'Sesión inválida. Por favor, inicie sesión nuevamente.');
+            return;
+        }
+        
         console.log('Intentando cargar contraseñas con token:', sessionData.token);
         
         const response = await fetch(`${API_URL}/passwords`, {
             headers: {
-                'Authorization': `Bearer ${sessionData.token}`
+                'Authorization': `Bearer ${sessionData.token}`,
+                'Content-Type': 'application/json'
             }
         });
         
         if (!response.ok) {
+            if (response.status === 401) {
+                showNotification('Error', 'Sesión expirada. Por favor, inicie sesión nuevamente.');
+                window.location.href = 'index.html';
+                return;
+            }
             const errorData = await response.json();
             throw new Error(errorData.error || 'Error al cargar contraseñas');
         }
@@ -361,61 +373,99 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('settingsSection').style.display = 'block';
     });
 
-    // Event listeners para el formulario de contraseña
-    if (generatePasswordBtn) {
-        generatePasswordBtn.addEventListener('click', () => {
-            const passwordInput = passwordForm?.querySelector('[name="password"]');
-            if (passwordInput) passwordInput.value = generateSecurePassword();
-        });
-    }
+    // Manejar el modal de contraseñas
+    const addPasswordModal = document.getElementById('addPasswordModal');
+    if (addPasswordModal) {
+        addPasswordModal.addEventListener('shown.bs.modal', () => {
+            const form = document.getElementById('addPasswordForm');
+            const generateBtn = document.getElementById('generatePasswordBtn');
+            const toggleBtn = document.getElementById('togglePasswordBtn');
+            const saveBtn = document.getElementById('savePasswordBtn');
 
-    if (togglePasswordBtn) {
-        togglePasswordBtn.addEventListener('click', () => {
-            const passwordInput = passwordForm?.querySelector('[name="password"]');
-            if (passwordInput) {
-                const type = passwordInput.type === 'password' ? 'text' : 'password';
-                passwordInput.type = type;
-                const icon = togglePasswordBtn.querySelector('i');
-                if (icon) icon.className = type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+            if (generateBtn) {
+                generateBtn.onclick = () => {
+                    const passwordInput = form.querySelector('input[name="password"]');
+                    if (passwordInput) {
+                        passwordInput.value = generateSecurePassword();
+                        passwordInput.type = 'text';
+                        const icon = toggleBtn.querySelector('i');
+                        if (icon) icon.className = 'bi bi-eye-slash';
+                    }
+                };
             }
-        });
-    }
 
-    if (savePasswordBtn && passwordForm) {
-        savePasswordBtn.addEventListener('click', async () => {
-            const formData = new FormData(passwordForm);
-            const data = {
-                serviceName: formData.get('serviceName'),
-                url: formData.get('url'),
-                username: formData.get('username'),
-                password: formData.get('password')
-            };
-            
-            try {
-                const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
-                const response = await fetch(`${API_URL}/passwords`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${sessionData.token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                if (!response.ok) throw new Error('Error al guardar la contraseña');
-                
-                const newPassword = await response.json();
-                passwords.push(newPassword);
-                renderPasswords();
-                
-                // Cerrar modal y limpiar formulario
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addPasswordModal'));
-                if (modal) modal.hide();
-                passwordForm.reset();
-                
-                showNotification('Éxito', 'Contraseña guardada correctamente');
-            } catch (error) {
-                showNotification('Error', 'No se pudo guardar la contraseña');
+            if (toggleBtn) {
+                toggleBtn.onclick = () => {
+                    const passwordInput = form.querySelector('input[name="password"]');
+                    if (passwordInput) {
+                        const type = passwordInput.type === 'password' ? 'text' : 'password';
+                        passwordInput.type = type;
+                        const icon = toggleBtn.querySelector('i');
+                        if (icon) icon.className = type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+                    }
+                };
+            }
+
+            if (saveBtn && form) {
+                saveBtn.onclick = async () => {
+                    try {
+                        const sessionData = JSON.parse(sessionStorage.getItem('currentSession'));
+                        if (!sessionData || !sessionData.token) {
+                            showNotification('Error', 'Sesión inválida. Por favor, inicie sesión nuevamente.');
+                            return;
+                        }
+
+                        const formData = new FormData(form);
+                        const data = {
+                            serviceName: formData.get('serviceName'),
+                            url: formData.get('url'),
+                            username: formData.get('username'),
+                            password: formData.get('password')
+                        };
+
+                        // Validar datos requeridos
+                        if (!data.serviceName || !data.password) {
+                            showNotification('Error', 'El nombre del servicio y la contraseña son requeridos');
+                            return;
+                        }
+
+                        console.log('Enviando datos:', data);
+                        
+                        const response = await fetch(`${API_URL}/passwords`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${sessionData.token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        });
+                        
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                showNotification('Error', 'Sesión expirada. Por favor, inicie sesión nuevamente.');
+                                window.location.href = 'index.html';
+                                return;
+                            }
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Error al guardar la contraseña');
+                        }
+                        
+                        const newPassword = await response.json();
+                        passwords.push(newPassword);
+                        renderPasswords();
+                        updateDashboardStats();
+                        
+                        // Cerrar modal y limpiar formulario
+                        const modal = bootstrap.Modal.getInstance(addPasswordModal);
+                        if (modal) modal.hide();
+                        form.reset();
+                        
+                        showNotification('Éxito', 'Contraseña guardada correctamente');
+                    } catch (error) {
+                        console.error('Error al guardar contraseña:', error);
+                        showNotification('Error', 'No se pudo guardar la contraseña: ' + error.message);
+                    }
+                };
             }
         });
     }
