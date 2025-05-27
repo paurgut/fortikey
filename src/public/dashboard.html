@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FortiKey - Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>FortiKey</h3>
+            </div>
+            <nav class="nav flex-column">
+                <a class="nav-link active" href="#" id="dashboardLink">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a class="nav-link" href="#" id="passwordsLink">
+                    <i class="bi bi-key"></i> Contraseñas
+                </a>
+                <a class="nav-link" href="#" id="qrLink">
+                    <i class="bi bi-qr-code-scan"></i> Escáner QR
+                </a>
+                <a class="nav-link" href="#" id="settingsLink">
+                    <i class="bi bi-gear"></i> Configuración
+                </a>
+                <a class="nav-link" href="#" id="logoutLink">
+                    <i class="bi bi-box-arrow-left"></i> Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Navbar -->
+            <nav class="navbar">
+                <div class="container-fluid">
+                    <button class="btn btn-link d-md-none" id="sidebarToggle">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="d-flex align-items-center">
+                        <div class="dropdown" id="userDropdown">
+                            <button class="btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i>
+                                <span id="userName">Usuario</span>
+                            </button>
+                            <ul class="dropdown-menu" id="userMenu">
+                                <li><a class="dropdown-item" href="#" id="profileLink">Perfil</a></li>
+                                <li><a class="dropdown-item" href="#" id="settingsLink">Configuración</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="logoutLink">Cerrar Sesión</a></li>
+                            </ul>
+                        </div>
+                        <button class="btn btn-link" id="darkModeToggle">
+                            <i class="bi bi-moon"></i>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Dashboard Section -->
+                <div id="dashboardSection" class="section">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card stat-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Contraseñas Guardadas</h5>
+                                    <h2 id="totalPasswords">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card stat-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Último Acceso</h5>
+                                    <h2 id="lastAccess">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card stat-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Estado de Seguridad</h5>
+                                    <h2 id="securityStatus">Bueno</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Contraseñas Recientes</h5>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPasswordModal">
+                                <i class="bi bi-plus"></i> Nueva Contraseña
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Servicio</th>
+                                            <th>Usuario</th>
+                                            <th>Última Actualización</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentPasswords">
+                                        <!-- Las contraseñas se cargarán dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Passwords Section -->
+                <div id="passwordsSection" class="section" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Mis Contraseñas</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPasswordModal">
+                            <i class="bi bi-plus"></i> Nueva Contraseña
+                        </button>
+                    </div>
+                    <div class="row" id="passwordsList">
+                        <!-- Las contraseñas se cargarán dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- QR Scanner Section -->
+                <div id="qrSection" class="section" style="display: none;">
+                    <h2 class="mb-4">Escáner QR</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="qrScanner" class="qr-scanner-container">
+                                <video id="qrVideo"></video>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="settingsSection" class="section" style="display: none;">
+                    <h2 class="mb-4">Configuración</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="settingsForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Tema</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="darkModeSwitch">
+                                        <label class="form-check-label" for="darkModeSwitch">Modo Oscuro</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Notificaciones</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="notificationsSwitch" checked>
+                                        <label class="form-check-label" for="notificationsSwitch">Activar Notificaciones</label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Password Modal -->
+    <div class="modal fade" id="addPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva Contraseña</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label for="serviceName" class="form-label">Nombre del Servicio</label>
+                            <input type="text" class="form-control" id="serviceName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="serviceUrl" class="form-label">URL del Servicio</label>
+                            <input type="url" class="form-control" id="serviceUrl">
+                        </div>
+                        <div class="mb-3">
+                            <label for="serviceUsername" class="form-label">Usuario</label>
+                            <input type="text" class="form-control" id="serviceUsername">
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Contraseña</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="passwordForm" class="btn btn-primary">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- CryptoJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- QR Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Custom JS -->
+    <script src="dashboard.js"></script>
+</body>
+</html> 

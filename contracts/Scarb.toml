@@ -1,0 +1,10 @@
+[package]
+name = "mi_proyecto_cairo"
+version = "0.1.0"
+edition = "2023_10"
+
+[dependencies]
+starknet = "2.11.4"
+
+[tool.starknet.contracts]
+mi_proyecto_cairo = ["src/lib.cairo"]
