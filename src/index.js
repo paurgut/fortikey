@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 const JWT_SECRET = 'clave_secreta_fortikey';
 
 // Middleware
