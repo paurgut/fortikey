@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración Starknet - FortiKey</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body class="bg-light text-light">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>FortiKey</h3>
+            </div>
+            <nav class="nav flex-column">
+                <a class="nav-link" href="dashboard.html">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a class="nav-link" href="#" id="passwordsLink">
+                    <i class="bi bi-key"></i> Contraseñas
+                </a>
+                <a class="nav-link" href="#" id="qrLink">
+                    <i class="bi bi-qr-code-scan"></i> Escáner QR
+                </a>
+                <a class="nav-link" href="#" id="settingsLink">
+                    <i class="bi bi-gear"></i> Configuración
+                </a>
+                <a class="nav-link active" href="starknet-config.html">
+                    <i class="bi bi-currency-bitcoin"></i> Starknet
+                </a>
+                <a class="nav-link" href="javascript:void(0)" onclick="logout()">
+                    <i class="bi bi-box-arrow-left"></i> Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Navbar -->
+            <nav class="navbar">
+                <div class="container-fluid">
+                    <button class="btn btn-link d-md-none" id="sidebarToggle">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="d-flex align-items-center">
+                        <div class="dropdown" id="userDropdown">
+                            <button class="btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i>
+                                <span id="userName">Usuario</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-light" id="userMenu">
+                                <li><a class="dropdown-item" href="#" id="profileLink">Perfil</a></li>
+                                <li><a class="dropdown-item" href="#" id="menuSettingsLink">Configuración</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="logout()">Cerrar Sesión</a></li>
+                            </ul>
+                        </div>
+                        <button class="btn btn-link" id="darkModeToggle">
+                            <i class="bi bi-moon"></i>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Configuración de Starknet</h1>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light border-secondary mb-4">
+                            <div class="card-header border-secondary">
+                                <h5 class="card-title mb-0">Estado de la Billetera</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Estado:</label>
+                                    <p id="walletStatus" class="form-control-plaintext">No conectada</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Dirección:</label>
+                                    <p id="walletAddress" class="form-control-plaintext">-</p>
+                                </div>
+                                <button id="connectWalletBtn" class="btn btn-primary">
+                                    <i class="bi bi-wallet2"></i> Conectar Billetera
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card bg-light border-secondary mb-4">
+                            <div class="card-header border-secondary">
+                                <h5 class="card-title mb-0">Token de Encriptación</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Estado:</label>
+                                    <p id="tokenStatus" class="form-control-plaintext">No generado</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Último token:</label>
+                                    <p id="lastToken" class="form-control-plaintext">-</p>
+                                </div>
+                                <button id="generateTokenBtn" class="btn btn-primary" disabled>
+                                    <i class="bi bi-key"></i> Generar Token
+                                </button>
+                                <button id="showQRBtn" class="btn btn-secondary ms-2" disabled>
+                                    <i class="bi bi-qr-code"></i> Mostrar QR
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card bg-light border-secondary">
+                            <div class="card-header border-secondary">
+                                <h5 class="card-title mb-0">Información</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>¿Qué es Starknet?</h6>
+                                <p>Starknet es una red de capa 2 que permite realizar transacciones de forma segura y eficiente en la blockchain de Ethereum.</p>
+                                
+                                <h6>¿Por qué usar Starknet?</h6>
+                                <ul>
+                                    <li>Mayor seguridad en el almacenamiento de contraseñas</li>
+                                    <li>Encriptación descentralizada</li>
+                                    <li>Sin dependencia de servidores centralizados</li>
+                                </ul>
+
+                                <h6>¿Cómo funciona?</h6>
+                                <ol>
+                                    <li>Conecta tu billetera de Starknet</li>
+                                    <li>Genera un token de encriptación único</li>
+                                    <li>Usa el token para encriptar tus contraseñas</li>
+                                    <li>Guarda el código QR como respaldo</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para QR -->
+    <div class="modal fade" id="qrModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-dark">Código QR de Token</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="qrCode"></div>
+                    <p class="mt-3 text-dark">Escanea este código QR para recuperar tu token de encriptación en otro dispositivo.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de notificación -->
+    <div class="modal fade" id="notificationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-dark" id="notificationTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="notificationMessage" class="text-dark"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="js/starknet-service.js"></script>
+    <script src="js/starknet-config.js"></script>
+</body>
+</html>
+ 

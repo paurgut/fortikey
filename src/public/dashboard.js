@@ -87,7 +87,12 @@ async function loadPasswords() {
             throw new Error('Error al cargar contraseñas');
         }
         
-        passwords = await response.json();
+        const data = await response.json();
+        passwords = Array.isArray(data) ? data : [];
+        
+        // Ordenar contraseñas por fecha de actualización (más recientes primero)
+        passwords.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        
         renderPasswords();
         updateDashboardStats();
     } catch (error) {
@@ -101,7 +106,8 @@ function renderPasswords() {
     // Renderizar en la tabla de contraseñas recientes
     if (recentPasswords) {
         recentPasswords.innerHTML = '';
-        passwords.forEach(password => {
+        const recentPasswordsList = passwords.slice(0, 5); // Mostrar solo las 5 más recientes
+        recentPasswordsList.forEach(password => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${password.serviceName}</td>
@@ -120,33 +126,27 @@ function renderPasswords() {
         });
     }
 
-    // Renderizar en la sección de mis contraseñas
-    if (passwordsList) {
-        passwordsList.innerHTML = '';
+    // Renderizar en la tabla de todas las contraseñas
+    const passwordsTable = document.getElementById('passwordsTable');
+    if (passwordsTable) {
+        passwordsTable.innerHTML = '';
         passwords.forEach(password => {
-            const col = document.createElement('div');
-            col.className = 'col-md-6 col-lg-4 mb-4';
-            col.innerHTML = `
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">${password.serviceName}</h5>
-                        <div class="card-text">
-                            <p><strong>URL:</strong> <a href="${password.url}" target="_blank">${password.url || 'No especificada'}</a></p>
-                            <p><strong>Usuario:</strong> ${password.username || 'No especificado'}</p>
-                            <p><strong>Última actualización:</strong> ${new Date(password.updatedAt).toLocaleDateString()}</p>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <button class="btn btn-sm btn-info me-2" onclick="showPassword('${password.id}')">
-                            <i class="bi bi-eye"></i> Ver Contraseña
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deletePassword('${password.id}')">
-                            <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                    </div>
-                </div>
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${password.serviceName}</td>
+                <td><a href="${password.url}" target="_blank">${password.url || '-'}</a></td>
+                <td>${password.username || '-'}</td>
+                <td>${new Date(password.updatedAt).toLocaleDateString()}</td>
+                <td>
+                    <button class="btn btn-sm btn-info me-2" onclick="showPassword('${password.id}')">
+                        <i class="bi bi-eye"></i> Ver
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePassword('${password.id}')">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                </td>
             `;
-            passwordsList.appendChild(col);
+            passwordsTable.appendChild(tr);
         });
     }
 }
@@ -481,6 +481,35 @@ async function savePassword(data) {
     }
 }
 
+// Función para actualizar el estado de Starknet en el dashboard
+async function updateStarknetStatus() {
+    try {
+        const isConnected = window.starknetService.isWalletConnected();
+        const address = window.starknetService.getWalletAddress();
+        const hasToken = !!window.starknetService.encryptionKey;
+
+        // Actualizar estado de la billetera
+        document.getElementById('dashboardWalletStatus').textContent = isConnected ? 'Conectada' : 'No conectada';
+        document.getElementById('dashboardWalletAddress').textContent = address || '-';
+
+        // Actualizar estado del token
+        document.getElementById('dashboardTokenStatus').textContent = hasToken ? 'Generado' : 'No generado';
+        document.getElementById('dashboardLastToken').textContent = hasToken ? '••••••••' : '-';
+    } catch (error) {
+        console.error('Error al actualizar estado de Starknet:', error);
+    }
+}
+
+// Inicializar Starknet al cargar el dashboard
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await window.starknetService.initialize();
+        updateStarknetStatus();
+    } catch (error) {
+        console.error('Error al inicializar Starknet:', error);
+    }
+});
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
@@ -566,13 +595,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Configuración
-    document.getElementById('menuSettingsLink').addEventListener('click', (e) => {
-        e.preventDefault();
-        navLinks.forEach(l => l.classList.remove('active'));
-        document.getElementById('settingsLink').classList.add('active');
-        sections.forEach(section => section.style.display = 'none');
-        document.getElementById('settingsSection').style.display = 'block';
-    });
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const settings = {
+                darkMode: document.getElementById('darkModeSwitch').checked,
+                notifications: document.getElementById('notificationsSwitch').checked
+            };
+            localStorage.setItem('settings', JSON.stringify(settings));
+            showNotification('Éxito', 'Configuración guardada correctamente');
+        });
+    }
 
     // Manejar el modal de contraseñas
     const addPasswordModal = document.getElementById('addPasswordModal');

@@ -31,9 +31,6 @@
                 <a class="nav-link" href="#" id="settingsLink">
                     <i class="bi bi-gear"></i> Configuración
                 </a>
-                <a class="nav-link" href="#" id="starknetLink">
-                    <i class="bi bi-currency-bitcoin"></i> Starknet
-                </a>
                 <a class="nav-link" href="javascript:void(0)" onclick="logout()" id="sidebarLogoutLink">
                     <i class="bi bi-box-arrow-left"></i> Cerrar Sesión
                 </a>
@@ -99,7 +96,7 @@
                         </div>
                     </div>
 
-                    <div class="card">
+                    <div class="card mb-4">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Contraseñas Recientes</h5>
                             <a href="new-password.html" class="btn btn-primary">
@@ -124,6 +121,40 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Starknet Section -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Starknet</h5>
+                            <a href="starknet-config.html" class="btn btn-primary">
+                                <i class="bi bi-gear"></i> Configuración Completa
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Estado de la Billetera:</label>
+                                        <p id="dashboardWalletStatus" class="form-control-plaintext">No conectada</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Dirección:</label>
+                                        <p id="dashboardWalletAddress" class="form-control-plaintext">-</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Estado del Token:</label>
+                                        <p id="dashboardTokenStatus" class="form-control-plaintext">No generado</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Último token:</label>
+                                        <p id="dashboardLastToken" class="form-control-plaintext">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Passwords Section -->
@@ -134,8 +165,25 @@
                             <i class="bi bi-plus"></i> Nueva Contraseña
                         </a>
                     </div>
-                    <div class="row" id="passwordsList">
-                        <!-- Las contraseñas se cargarán dinámicamente -->
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Servicio</th>
+                                            <th>URL</th>
+                                            <th>Usuario</th>
+                                            <th>Última Actualización</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="passwordsTable">
+                                        <!-- Las contraseñas se cargarán dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -173,32 +221,6 @@
                                 </div>
                                 <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                             </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Starknet Section -->
-                <div id="starknetSection" class="section" style="display: none;">
-                    <h2 class="mb-4">Starknet</h2>
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="mb-4">
-                                <h5>Estado de la Billetera</h5>
-                                <p id="walletStatus">No conectada</p>
-                                <button class="btn btn-primary" id="connectWalletBtn">
-                                    <i class="bi bi-wallet2"></i> Conectar Billetera
-                                </button>
-                            </div>
-                            <div class="mb-4">
-                                <h5>Token de Cifrado</h5>
-                                <p id="tokenStatus">No generado</p>
-                                <button class="btn btn-success" id="generateTokenBtn" disabled>
-                                    <i class="bi bi-key"></i> Generar Token
-                                </button>
-                                <button class="btn btn-info ms-2" id="showQRBtn" disabled>
-                                    <i class="bi bi-qr-code"></i> Mostrar QR
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -304,6 +326,17 @@
                         <p id="viewUrl" class="form-control-plaintext"></p>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Contraseña:</label>
+                        <p id="viewPassword" class="form-control-plaintext"></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- CryptoJS -->
