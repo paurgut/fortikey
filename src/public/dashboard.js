@@ -107,30 +107,57 @@ async function loadPasswords() {
 
 // Renderizar contraseñas
 function renderPasswords() {
-    if (!recentPasswords) {
-        console.error('No se encontró el elemento recentPasswords');
-        return;
+    // Renderizar en la tabla de contraseñas recientes
+    if (recentPasswords) {
+        recentPasswords.innerHTML = '';
+        passwords.forEach(password => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${password.serviceName}</td>
+                <td>${password.username || '-'}</td>
+                <td>${new Date(password.updatedAt).toLocaleDateString()}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="showPassword('${password.id}')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePassword('${password.id}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            recentPasswords.appendChild(tr);
+        });
     }
 
-    recentPasswords.innerHTML = '';
-    
-    passwords.forEach(password => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${password.serviceName}</td>
-            <td>${password.username || '-'}</td>
-            <td>${new Date(password.updatedAt).toLocaleDateString()}</td>
-            <td>
-                <button class="btn btn-sm btn-info" onclick="showPassword('${password.id}')">
-                    <i class="bi bi-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="deletePassword('${password.id}')">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
-        recentPasswords.appendChild(tr);
-    });
+    // Renderizar en la sección de mis contraseñas
+    if (passwordsList) {
+        passwordsList.innerHTML = '';
+        passwords.forEach(password => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4 mb-4';
+            col.innerHTML = `
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">${password.serviceName}</h5>
+                        <div class="card-text">
+                            <p><strong>URL:</strong> <a href="${password.url}" target="_blank">${password.url || 'No especificada'}</a></p>
+                            <p><strong>Usuario:</strong> ${password.username || 'No especificado'}</p>
+                            <p><strong>Última actualización:</strong> ${new Date(password.updatedAt).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-sm btn-info me-2" onclick="showPassword('${password.id}')">
+                            <i class="bi bi-eye"></i> Ver Contraseña
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deletePassword('${password.id}')">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            `;
+            passwordsList.appendChild(col);
+        });
+    }
 }
 
 // Actualizar estadísticas del dashboard
