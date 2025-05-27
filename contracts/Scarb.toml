@@ -7,4 +7,8 @@ edition = "2023_01"
 starknet = "2.11.4"
 
 [tool.starknet.contracts]
-mi_proyecto_cairo = ["src/lib.cairo"]
+fortikey = ["src/lib.cairo"]
+
+[tool.starknet.cairo]
+sierra = true
+casm = true

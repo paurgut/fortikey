@@ -1,0 +1,9 @@
+{
+    "version": 1,
+    "variant": {
+        "type": "open_zeppelin",
+        "version": 1,
+        "public_key": "0x0209c0708d3ED094E6901CbC3fB22c037ff01866B8aE0e1B718214e84d2d9db6",
+        "private_key": "0x03233558066c381cdc8c34a7e5c6bf5fba3a28857ace4aa50e6141f2228e779e"
+    }
+} 
