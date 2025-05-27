@@ -1,5 +1,5 @@
 // Configuración
-const API_URL = 'https://fortikey.onrender.com/';
+const API_URL = 'https://fortikey.onrender.com';
 
 // Elementos del DOM
 const newPasswordForm = document.getElementById('newPasswordForm');
